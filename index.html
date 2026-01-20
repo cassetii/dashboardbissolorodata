@@ -792,36 +792,39 @@
         // =============================================
         function updateStats() {
             const totalDPT = dptData.length;
-            const totalInput = dukunganData.length;
             const mendukung = dukunganData.filter(d => d.status === 'Mendukung');
             const pilihanLain = dukunganData.filter(d => d.status === 'Ada Pilihan Lain');
             const ragu = dukunganData.filter(d => d.status === 'Ragu-Ragu');
 
-            // Count DPT in families
+            // Hitung berdasarkan jumlah_anggota (semua anggota keluarga)
+            const totalInput = dukunganData.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
             const dptMendukung = mendukung.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
             const dptPilihanLain = pilihanLain.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
             const dptRagu = ragu.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
 
             document.getElementById('totalDPT').textContent = totalDPT.toLocaleString();
             document.getElementById('totalInput').textContent = totalInput.toLocaleString();
-            document.getElementById('totalMendukung').textContent = mendukung.length.toLocaleString();
-            document.getElementById('totalPilihanLain').textContent = pilihanLain.length.toLocaleString();
-            document.getElementById('totalRagu').textContent = ragu.length.toLocaleString();
+            
+            // Tampilkan jumlah DPT (bukan jumlah record)
+            document.getElementById('totalMendukung').textContent = dptMendukung.toLocaleString();
+            document.getElementById('totalPilihanLain').textContent = dptPilihanLain.toLocaleString();
+            document.getElementById('totalRagu').textContent = dptRagu.toLocaleString();
 
-            // Percentages
+            // Percentages berdasarkan total DPT
             const percentInput = totalDPT > 0 ? ((totalInput / totalDPT) * 100).toFixed(1) : 0;
-            const percentMendukung = totalInput > 0 ? ((mendukung.length / totalInput) * 100).toFixed(1) : 0;
-            const percentPilihanLain = totalInput > 0 ? ((pilihanLain.length / totalInput) * 100).toFixed(1) : 0;
-            const percentRagu = totalInput > 0 ? ((ragu.length / totalInput) * 100).toFixed(1) : 0;
+            const percentMendukung = totalDPT > 0 ? ((dptMendukung / totalDPT) * 100).toFixed(1) : 0;
+            const percentPilihanLain = totalDPT > 0 ? ((dptPilihanLain / totalDPT) * 100).toFixed(1) : 0;
+            const percentRagu = totalDPT > 0 ? ((dptRagu / totalDPT) * 100).toFixed(1) : 0;
 
             document.getElementById('percentInput').textContent = percentInput + '%';
             document.getElementById('percentMendukung').textContent = percentMendukung + '%';
             document.getElementById('percentPilihanLain').textContent = percentPilihanLain + '%';
             document.getElementById('percentRagu').textContent = percentRagu + '%';
 
-            document.getElementById('dptMendukung').textContent = dptMendukung.toLocaleString();
-            document.getElementById('dptPilihanLain').textContent = dptPilihanLain.toLocaleString();
-            document.getElementById('dptRagu').textContent = dptRagu.toLocaleString();
+            // Tampilkan jumlah keluarga (record) di sub text
+            document.getElementById('dptMendukung').textContent = mendukung.length.toLocaleString() + ' keluarga';
+            document.getElementById('dptPilihanLain').textContent = pilihanLain.length.toLocaleString() + ' keluarga';
+            document.getElementById('dptRagu').textContent = ragu.length.toLocaleString() + ' keluarga';
         }
 
         // =============================================
@@ -1101,26 +1104,40 @@
             const pilihanLain = dukunganData.filter(d => d.status === 'Ada Pilihan Lain');
             const ragu = dukunganData.filter(d => d.status === 'Ragu-Ragu');
 
-            // Status Charts
-            const statusData = [mendukung.length, pilihanLain.length, ragu.length];
+            // Hitung jumlah DPT (bukan jumlah record)
+            const dptMendukung = mendukung.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
+            const dptPilihanLain = pilihanLain.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
+            const dptRagu = ragu.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
+
+            // Status Charts - tampilkan jumlah DPT
+            const statusData = [dptMendukung, dptPilihanLain, dptRagu];
             charts.status.data.datasets[0].data = statusData;
             charts.status.update();
             charts.status2.data.datasets[0].data = statusData;
             charts.status2.update();
 
-            // Dusun Chart
+            // Dusun Chart - hitung per dusun berdasarkan jumlah_anggota
             const dusuns = [...new Set(dukunganData.map(d => d.nama_dusun))].sort();
             charts.dusun.data.labels = dusuns;
-            charts.dusun.data.datasets[0].data = dusuns.map(d => dukunganData.filter(x => x.nama_dusun === d && x.status === 'Mendukung').length);
-            charts.dusun.data.datasets[1].data = dusuns.map(d => dukunganData.filter(x => x.nama_dusun === d && x.status === 'Ada Pilihan Lain').length);
-            charts.dusun.data.datasets[2].data = dusuns.map(d => dukunganData.filter(x => x.nama_dusun === d && x.status === 'Ragu-Ragu').length);
+            charts.dusun.data.datasets[0].data = dusuns.map(d => 
+                dukunganData.filter(x => x.nama_dusun === d && x.status === 'Mendukung')
+                    .reduce((sum, x) => sum + (x.jumlah_anggota || 1), 0)
+            );
+            charts.dusun.data.datasets[1].data = dusuns.map(d => 
+                dukunganData.filter(x => x.nama_dusun === d && x.status === 'Ada Pilihan Lain')
+                    .reduce((sum, x) => sum + (x.jumlah_anggota || 1), 0)
+            );
+            charts.dusun.data.datasets[2].data = dusuns.map(d => 
+                dukunganData.filter(x => x.nama_dusun === d && x.status === 'Ragu-Ragu')
+                    .reduce((sum, x) => sum + (x.jumlah_anggota || 1), 0)
+            );
             charts.dusun.update();
 
-            // Program Charts
+            // Program Charts - hitung berdasarkan jumlah_anggota
             const programCounts = {};
             dukunganData.forEach(d => {
                 if (d.program_kerja) {
-                    programCounts[d.program_kerja] = (programCounts[d.program_kerja] || 0) + 1;
+                    programCounts[d.program_kerja] = (programCounts[d.program_kerja] || 0) + (d.jumlah_anggota || 1);
                 }
             });
             const sortedPrograms = Object.entries(programCounts).sort((a, b) => b[1] - a[1]);
@@ -1134,9 +1151,6 @@
             charts.program2.update();
 
             // DPT Chart
-            const dptMendukung = mendukung.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
-            const dptPilihanLain = pilihanLain.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
-            const dptRagu = ragu.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
             charts.dpt.data.datasets[0].data = [dptMendukung, dptPilihanLain, dptRagu];
             charts.dpt.update();
 

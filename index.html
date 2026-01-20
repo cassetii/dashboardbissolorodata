@@ -721,10 +721,11 @@
             try {
                 updateConnectionStatus('loading');
 
-                // Load DPT count
+                // Load DPT count (tambah range untuk ambil semua data > 1000)
                 const { data: dpt, error: dptError } = await db
                     .from('dpt')
-                    .select('*');
+                    .select('*')
+                    .range(0, 1999);
                 
                 if (dptError) throw dptError;
                 dptData = dpt || [];
@@ -733,6 +734,7 @@
                 const { data: dukungan, error: dukunganError } = await db
                     .from('dukungan')
                     .select('*')
+                    .range(0, 9999)
                     .order('created_at', { ascending: false });
                 
                 if (dukunganError) throw dukunganError;

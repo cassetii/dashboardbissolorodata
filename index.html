@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIDATA Dashboard - Desa Bissoloro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --primary-light: #2d5a8b;
+            --secondary: #e63946;
+            --accent: #f4a261;
+            --success: #2a9d8f;
+            --warning: #e9c46a;
+            --danger: #e76f51;
+            --bg-dark: #0d1b2a;
+            --bg-card: #1b2838;
+            --bg-input: #243447;
+            --text-primary: #ffffff;
+            --text-secondary: #a8b2c1;
+            --text-muted: #6b7a8f;
+            --border: #2d3e50;
+            --gradient-1: linear-gradient(135deg, #1e3a5f 0%, #2d5a8b 100%);
+            --gradient-2: linear-gradient(135deg, #e63946 0%, #f4a261 100%);
+            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(230, 57, 70, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(45, 90, 139, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(244, 162, 97, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .logo-text h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--gradient-2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text span {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .nav-tab {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .nav-tab:hover {
+            background: var(--bg-input);
+            color: var(--text-primary);
+        }
+
+        .nav-tab.active {
+            background: var(--gradient-2);
+            color: white;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--gradient-2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .stat-card.total::before { background: var(--gradient-1); }
+        .stat-card.mendukung::before { background: var(--success); }
+        .stat-card.pilihan-lain::before { background: var(--warning); }
+        .stat-card.ragu::before { background: var(--danger); }
+        .stat-card.dpt::before { background: var(--accent); }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .stat-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .stat-sub span {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Percentage Badge */
+        .stat-percentage {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255,255,255,0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Data Table Section */
+        .data-section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .data-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filters {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-select, .search-input {
+            padding: 0.625rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            min-width: 150px;
+        }
+
+        .search-input {
+            min-width: 250px;
+        }
+
+        .filter-select:focus, .search-input:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th {
+            background: var(--bg-input);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-input);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-mendukung {
+            background: rgba(42, 157, 143, 0.2);
+            color: var(--success);
+        }
+
+        .status-pilihan-lain {
+            background: rgba(233, 196, 106, 0.2);
+            color: var(--warning);
+        }
+
+        .status-ragu {
+            background: rgba(231, 111, 81, 0.2);
+            color: var(--danger);
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border);
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(200%);
+            transition: transform 0.3s ease;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+
+        /* Connection Status */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-input);
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.error {
+            background: var(--danger);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .filters {
+                width: 100%;
+            }
+
+            .filter-select, .search-input {
+                flex: 1;
+                min-width: unset;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">SD</div>
+                <div class="logo-text">
+                    <h1>SIDATA Dashboard</h1>
+                    <span>Desa Bissoloro - Realtime Monitoring</span>
+                </div>
+            </div>
+            <nav class="nav-tabs">
+                <button class="nav-tab active" data-tab="overview">📊 Overview</button>
+                <button class="nav-tab" data-tab="charts">📈 Grafik</button>
+                <button class="nav-tab" data-tab="data">📋 Data</button>
+            </nav>
+            <div class="header-actions">
+                <div class="connection-status">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Connecting...</span>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="refreshData()">🔄 Refresh</button>
+                <button class="btn btn-secondary btn-sm" onclick="exportCSV()">📥 Export CSV</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-container">
+        <!-- Stats Section -->
+        <section class="stats-grid" id="statsSection">
+            <div class="stat-card total animate-in" style="animation-delay: 0.1s">
+                <div class="stat-icon">👥</div>
+                <div class="stat-label">Total DPT Desa</div>
+                <div class="stat-value" id="totalDPT">-</div>
+                <div class="stat-sub">dari tabel DPT</div>
+            </div>
+            <div class="stat-card dpt animate-in" style="animation-delay: 0.15s">
+                <div class="stat-icon">📝</div>
+                <div class="stat-label">Sudah Diinput</div>
+                <div class="stat-value" id="totalInput">-</div>
+                <div class="stat-percentage" id="percentInput">0%</div>
+                <div class="stat-sub">dari total DPT</div>
+            </div>
+            <div class="stat-card mendukung animate-in" style="animation-delay: 0.2s">
+                <div class="stat-icon">✅</div>
+                <div class="stat-label">Mendukung</div>
+                <div class="stat-value" id="totalMendukung">-</div>
+                <div class="stat-percentage" id="percentMendukung">0%</div>
+                <div class="stat-sub"><span id="dptMendukung">0</span> total DPT keluarga</div>
+            </div>
+            <div class="stat-card pilihan-lain animate-in" style="animation-delay: 0.3s">
+                <div class="stat-icon">🔄</div>
+                <div class="stat-label">Ada Pilihan Lain</div>
+                <div class="stat-value" id="totalPilihanLain">-</div>
+                <div class="stat-percentage" id="percentPilihanLain">0%</div>
+                <div class="stat-sub"><span id="dptPilihanLain">0</span> total DPT keluarga</div>
+            </div>
+            <div class="stat-card ragu animate-in" style="animation-delay: 0.4s">
+                <div class="stat-icon">❓</div>
+                <div class="stat-label">Ragu-Ragu</div>
+                <div class="stat-value" id="totalRagu">-</div>
+                <div class="stat-percentage" id="percentRagu">0%</div>
+                <div class="stat-sub"><span id="dptRagu">0</span> total DPT keluarga</div>
+            </div>
+        </section>
+
+        <!-- Overview Section (Charts Summary) -->
+        <section id="overviewSection">
+            <h2 class="section-title">📊 Ringkasan Data</h2>
+            <div class="charts-grid">
+                <div class="chart-card animate-in">
+                    <h3 class="chart-title">📊 Distribusi Status Dukungan</h3>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card animate-in">
+                    <h3 class="chart-title">📋 Program Kerja Prioritas</h3>
+                    <div class="chart-container">
+                        <canvas id="programChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section (Full) -->
+        <section id="chartsSection" style="display: none;">
+            <h2 class="section-title">📈 Analisis Grafik Lengkap</h2>
+            <div class="charts-grid">
+                <div class="chart-card animate-in">
+                    <h3 class="chart-title">📊 Distribusi Status Dukungan</h3>
+                    <div class="chart-container">
+                        <canvas id="statusChart2"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card animate-in">
+                    <h3 class="chart-title">📍 Data Per Dusun</h3>
+                    <div class="chart-container">
+                        <canvas id="dusunChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card animate-in">
+                    <h3 class="chart-title">📋 Program Kerja Prioritas</h3>
+                    <div class="chart-container">
+                        <canvas id="programChart2"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card animate-in">
+                    <h3 class="chart-title">📈 DPT per Status (Keluarga)</h3>
+                    <div class="chart-container">
+                        <canvas id="dptChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card animate-in">
+                    <h3 class="chart-title">🗺️ Data Per TPS</h3>
+                    <div class="chart-container">
+                        <canvas id="tpsChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card animate-in">
+                    <h3 class="chart-title">📅 Input per Hari</h3>
+                    <div class="chart-container">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table Section -->
+        <section id="dataSection" style="display: none;">
+            <div class="data-section">
+                <div class="data-header">
+                    <h2 class="section-title" style="margin-bottom: 0;">📋 Daftar Data Dukungan</h2>
+                    <div class="filters">
+                        <input type="text" class="search-input" id="searchInput" placeholder="🔍 Cari nama...">
+                        <select class="filter-select" id="filterDusun">
+                            <option value="">Semua Dusun</option>
+                        </select>
+                        <select class="filter-select" id="filterStatus">
+                            <option value="">Semua Status</option>
+                            <option value="Mendukung">Mendukung</option>
+                            <option value="Ada Pilihan Lain">Ada Pilihan Lain</option>
+                            <option value="Ragu-Ragu">Ragu-Ragu</option>
+                        </select>
+                        <select class="filter-select" id="filterProgram">
+                            <option value="">Semua Program</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container" id="tableContainer">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Memuat data...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // =============================================
+        // KONFIGURASI SUPABASE
+        // =============================================
+        const SUPABASE_URL = 'https://xjckhssmoqqroofzzmia.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqY2toc3Ntb3Fxcm9vZnp6bWlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4NjE2NDksImV4cCI6MjA4NDQzNzY0OX0.Hsawz0B-bGpnU3gzOxWff05FCjyQ0R4TnLSUuaVNkyQ';
+        
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // =============================================
+        // STATE
+        // =============================================
+        let dptData = [];
+        let dukunganData = [];
+        let charts = {};
+
+        // =============================================
+        // INIT
+        // =============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            setupTabs();
+            setupFilters();
+            await loadData();
+            initCharts();
+        });
+
+        // =============================================
+        // LOAD DATA FROM SUPABASE
+        // =============================================
+        async function loadData() {
+            try {
+                updateConnectionStatus('loading');
+
+                // Load DPT count
+                const { data: dpt, error: dptError } = await db
+                    .from('dpt')
+                    .select('*');
+                
+                if (dptError) throw dptError;
+                dptData = dpt || [];
+
+                // Load Dukungan
+                const { data: dukungan, error: dukunganError } = await db
+                    .from('dukungan')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (dukunganError) throw dukunganError;
+                dukunganData = dukungan || [];
+
+                updateConnectionStatus('connected');
+                updateStats();
+                populateFilters();
+                renderTable();
+                updateCharts();
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                updateConnectionStatus('error');
+                showToast('Gagal memuat data: ' + error.message, 'error');
+            }
+        }
+
+        // =============================================
+        // CONNECTION STATUS
+        // =============================================
+        function updateConnectionStatus(status) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            
+            if (status === 'connected') {
+                dot.classList.remove('error');
+                text.textContent = 'Connected';
+            } else if (status === 'error') {
+                dot.classList.add('error');
+                text.textContent = 'Disconnected';
+            } else {
+                text.textContent = 'Loading...';
+            }
+        }
+
+        // =============================================
+        // UPDATE STATS
+        // =============================================
+        function updateStats() {
+            const totalDPT = dptData.length;
+            const totalInput = dukunganData.length;
+            const mendukung = dukunganData.filter(d => d.status === 'Mendukung');
+            const pilihanLain = dukunganData.filter(d => d.status === 'Ada Pilihan Lain');
+            const ragu = dukunganData.filter(d => d.status === 'Ragu-Ragu');
+
+            // Count DPT in families
+            const dptMendukung = mendukung.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
+            const dptPilihanLain = pilihanLain.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
+            const dptRagu = ragu.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
+
+            document.getElementById('totalDPT').textContent = totalDPT.toLocaleString();
+            document.getElementById('totalInput').textContent = totalInput.toLocaleString();
+            document.getElementById('totalMendukung').textContent = mendukung.length.toLocaleString();
+            document.getElementById('totalPilihanLain').textContent = pilihanLain.length.toLocaleString();
+            document.getElementById('totalRagu').textContent = ragu.length.toLocaleString();
+
+            // Percentages
+            const percentInput = totalDPT > 0 ? ((totalInput / totalDPT) * 100).toFixed(1) : 0;
+            const percentMendukung = totalInput > 0 ? ((mendukung.length / totalInput) * 100).toFixed(1) : 0;
+            const percentPilihanLain = totalInput > 0 ? ((pilihanLain.length / totalInput) * 100).toFixed(1) : 0;
+            const percentRagu = totalInput > 0 ? ((ragu.length / totalInput) * 100).toFixed(1) : 0;
+
+            document.getElementById('percentInput').textContent = percentInput + '%';
+            document.getElementById('percentMendukung').textContent = percentMendukung + '%';
+            document.getElementById('percentPilihanLain').textContent = percentPilihanLain + '%';
+            document.getElementById('percentRagu').textContent = percentRagu + '%';
+
+            document.getElementById('dptMendukung').textContent = dptMendukung.toLocaleString();
+            document.getElementById('dptPilihanLain').textContent = dptPilihanLain.toLocaleString();
+            document.getElementById('dptRagu').textContent = dptRagu.toLocaleString();
+        }
+
+        // =============================================
+        // POPULATE FILTERS
+        // =============================================
+        function populateFilters() {
+            // Dusun filter
+            const dusuns = [...new Set(dukunganData.map(d => d.nama_dusun))].sort();
+            const dusunSelect = document.getElementById('filterDusun');
+            dusunSelect.innerHTML = '<option value="">Semua Dusun</option>';
+            dusuns.forEach(d => {
+                dusunSelect.innerHTML += `<option value="${d}">${d}</option>`;
+            });
+
+            // Program filter
+            const programs = [...new Set(dukunganData.map(d => d.program_kerja).filter(Boolean))].sort();
+            const programSelect = document.getElementById('filterProgram');
+            programSelect.innerHTML = '<option value="">Semua Program</option>';
+            programs.forEach(p => {
+                programSelect.innerHTML += `<option value="${p}">${p}</option>`;
+            });
+        }
+
+        // =============================================
+        // RENDER TABLE
+        // =============================================
+        function renderTable() {
+            const container = document.getElementById('tableContainer');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filterDusun = document.getElementById('filterDusun').value;
+            const filterStatus = document.getElementById('filterStatus').value;
+            const filterProgram = document.getElementById('filterProgram').value;
+
+            let filtered = dukunganData;
+
+            if (searchTerm) {
+                filtered = filtered.filter(d => d.nama.toLowerCase().includes(searchTerm));
+            }
+            if (filterDusun) {
+                filtered = filtered.filter(d => d.nama_dusun === filterDusun);
+            }
+            if (filterStatus) {
+                filtered = filtered.filter(d => d.status === filterStatus);
+            }
+            if (filterProgram) {
+                filtered = filtered.filter(d => d.program_kerja === filterProgram);
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>Tidak ada data ditemukan</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama</th>
+                            <th>Dusun</th>
+                            <th>Anggota KK</th>
+                            <th>Status</th>
+                            <th>Program Kerja</th>
+                            <th>Waktu Input</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            filtered.forEach((item, idx) => {
+                const statusClass = item.status === 'Mendukung' ? 'status-mendukung' : 
+                                   item.status === 'Ada Pilihan Lain' ? 'status-pilihan-lain' : 'status-ragu';
+                const date = new Date(item.created_at).toLocaleString('id-ID');
+                
+                html += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td><strong>${item.nama}</strong></td>
+                        <td>${item.nama_dusun}</td>
+                        <td>${item.jumlah_anggota || 1} orang</td>
+                        <td><span class="status-badge ${statusClass}">${item.status}</span></td>
+                        <td>${item.program_kerja || '-'}</td>
+                        <td>${date}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // =============================================
+        // INIT CHARTS
+        // =============================================
+        function initCharts() {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#a8b2c1', font: { family: 'Plus Jakarta Sans' } }
+                    }
+                }
+            };
+
+            // Status Chart (Overview)
+            charts.status = new Chart(document.getElementById('statusChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Mendukung', 'Ada Pilihan Lain', 'Ragu-Ragu'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#2a9d8f', '#e9c46a', '#e76f51']
+                    }]
+                },
+                options: { ...chartOptions, cutout: '60%' }
+            });
+
+            // Program Chart (Overview)
+            charts.program = new Chart(document.getElementById('programChart'), {
+                type: 'polarArea',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            'rgba(230, 57, 70, 0.7)',
+                            'rgba(42, 157, 143, 0.7)',
+                            'rgba(233, 196, 106, 0.7)',
+                            'rgba(244, 162, 97, 0.7)',
+                            'rgba(45, 90, 139, 0.7)',
+                            'rgba(231, 111, 81, 0.7)',
+                            'rgba(38, 70, 83, 0.7)',
+                            'rgba(168, 178, 193, 0.7)',
+                            'rgba(100, 200, 150, 0.7)'
+                        ]
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        r: {
+                            ticks: { color: '#a8b2c1', backdropColor: 'transparent' },
+                            grid: { color: '#2d3e50' }
+                        }
+                    }
+                }
+            });
+
+            // Status Chart 2 (Charts Tab)
+            charts.status2 = new Chart(document.getElementById('statusChart2'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Mendukung', 'Ada Pilihan Lain', 'Ragu-Ragu'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#2a9d8f', '#e9c46a', '#e76f51']
+                    }]
+                },
+                options: { ...chartOptions, cutout: '60%' }
+            });
+
+            // Dusun Chart
+            charts.dusun = new Chart(document.getElementById('dusunChart'), {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: 'Mendukung', data: [], backgroundColor: '#2a9d8f' },
+                        { label: 'Pilihan Lain', data: [], backgroundColor: '#e9c46a' },
+                        { label: 'Ragu-Ragu', data: [], backgroundColor: '#e76f51' }
+                    ]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        x: { stacked: true, ticks: { color: '#a8b2c1' }, grid: { color: '#2d3e50' } },
+                        y: { stacked: true, ticks: { color: '#a8b2c1' }, grid: { color: '#2d3e50' } }
+                    }
+                }
+            });
+
+            // Program Chart 2
+            charts.program2 = new Chart(document.getElementById('programChart2'), {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Jumlah',
+                        data: [],
+                        backgroundColor: '#e63946'
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    indexAxis: 'y',
+                    scales: {
+                        x: { ticks: { color: '#a8b2c1' }, grid: { color: '#2d3e50' } },
+                        y: { ticks: { color: '#a8b2c1' }, grid: { color: '#2d3e50' } }
+                    }
+                }
+            });
+
+            // DPT Chart
+            charts.dpt = new Chart(document.getElementById('dptChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['DPT Mendukung', 'DPT Pilihan Lain', 'DPT Ragu-Ragu'],
+                    datasets: [{
+                        label: 'Jumlah DPT Keluarga',
+                        data: [0, 0, 0],
+                        backgroundColor: ['#2a9d8f', '#e9c46a', '#e76f51']
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        x: { ticks: { color: '#a8b2c1' }, grid: { color: '#2d3e50' } },
+                        y: { ticks: { color: '#a8b2c1' }, grid: { color: '#2d3e50' } }
+                    }
+                }
+            });
+
+            // TPS Chart
+            charts.tps = new Chart(document.getElementById('tpsChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['TPS 1', 'TPS 2', 'TPS 3', 'TPS 4', 'TPS 5', 'TPS 6'],
+                    datasets: [
+                        { label: 'Mendukung', data: [], backgroundColor: '#2a9d8f' },
+                        { label: 'Pilihan Lain', data: [], backgroundColor: '#e9c46a' },
+                        { label: 'Ragu-Ragu', data: [], backgroundColor: '#e76f51' }
+                    ]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        x: { stacked: true, ticks: { color: '#a8b2c1' }, grid: { color: '#2d3e50' } },
+                        y: { stacked: true, ticks: { color: '#a8b2c1' }, grid: { color: '#2d3e50' } }
+                    }
+                }
+            });
+
+            // Timeline Chart
+            charts.timeline = new Chart(document.getElementById('timelineChart'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Input per Hari',
+                        data: [],
+                        borderColor: '#e63946',
+                        backgroundColor: 'rgba(230, 57, 70, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        x: { ticks: { color: '#a8b2c1' }, grid: { color: '#2d3e50' } },
+                        y: { ticks: { color: '#a8b2c1' }, grid: { color: '#2d3e50' } }
+                    }
+                }
+            });
+        }
+
+        // =============================================
+        // UPDATE CHARTS
+        // =============================================
+        function updateCharts() {
+            const mendukung = dukunganData.filter(d => d.status === 'Mendukung');
+            const pilihanLain = dukunganData.filter(d => d.status === 'Ada Pilihan Lain');
+            const ragu = dukunganData.filter(d => d.status === 'Ragu-Ragu');
+
+            // Status Charts
+            const statusData = [mendukung.length, pilihanLain.length, ragu.length];
+            charts.status.data.datasets[0].data = statusData;
+            charts.status.update();
+            charts.status2.data.datasets[0].data = statusData;
+            charts.status2.update();
+
+            // Dusun Chart
+            const dusuns = [...new Set(dukunganData.map(d => d.nama_dusun))].sort();
+            charts.dusun.data.labels = dusuns;
+            charts.dusun.data.datasets[0].data = dusuns.map(d => dukunganData.filter(x => x.nama_dusun === d && x.status === 'Mendukung').length);
+            charts.dusun.data.datasets[1].data = dusuns.map(d => dukunganData.filter(x => x.nama_dusun === d && x.status === 'Ada Pilihan Lain').length);
+            charts.dusun.data.datasets[2].data = dusuns.map(d => dukunganData.filter(x => x.nama_dusun === d && x.status === 'Ragu-Ragu').length);
+            charts.dusun.update();
+
+            // Program Charts
+            const programCounts = {};
+            dukunganData.forEach(d => {
+                if (d.program_kerja) {
+                    programCounts[d.program_kerja] = (programCounts[d.program_kerja] || 0) + 1;
+                }
+            });
+            const sortedPrograms = Object.entries(programCounts).sort((a, b) => b[1] - a[1]);
+            
+            charts.program.data.labels = sortedPrograms.map(p => p[0]);
+            charts.program.data.datasets[0].data = sortedPrograms.map(p => p[1]);
+            charts.program.update();
+
+            charts.program2.data.labels = sortedPrograms.map(p => p[0]);
+            charts.program2.data.datasets[0].data = sortedPrograms.map(p => p[1]);
+            charts.program2.update();
+
+            // DPT Chart
+            const dptMendukung = mendukung.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
+            const dptPilihanLain = pilihanLain.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
+            const dptRagu = ragu.reduce((sum, d) => sum + (d.jumlah_anggota || 1), 0);
+            charts.dpt.data.datasets[0].data = [dptMendukung, dptPilihanLain, dptRagu];
+            charts.dpt.update();
+
+            // TPS Chart - get TPS from DPT data
+            const nikToTPS = {};
+            dptData.forEach(d => { nikToTPS[d.nik] = d.tps; });
+            
+            const tpsList = ['TPS 1', 'TPS 2', 'TPS 3', 'TPS 4', 'TPS 5', 'TPS 6'];
+            charts.tps.data.datasets[0].data = tpsList.map(tps => 
+                dukunganData.filter(d => nikToTPS[d.nik] === tps && d.status === 'Mendukung').length
+            );
+            charts.tps.data.datasets[1].data = tpsList.map(tps => 
+                dukunganData.filter(d => nikToTPS[d.nik] === tps && d.status === 'Ada Pilihan Lain').length
+            );
+            charts.tps.data.datasets[2].data = tpsList.map(tps => 
+                dukunganData.filter(d => nikToTPS[d.nik] === tps && d.status === 'Ragu-Ragu').length
+            );
+            charts.tps.update();
+
+            // Timeline Chart
+            const dateCounts = {};
+            dukunganData.forEach(d => {
+                const date = new Date(d.created_at).toLocaleDateString('id-ID');
+                dateCounts[date] = (dateCounts[date] || 0) + 1;
+            });
+            const sortedDates = Object.entries(dateCounts).sort((a, b) => 
+                new Date(a[0].split('/').reverse().join('-')) - new Date(b[0].split('/').reverse().join('-'))
+            );
+            charts.timeline.data.labels = sortedDates.map(d => d[0]);
+            charts.timeline.data.datasets[0].data = sortedDates.map(d => d[1]);
+            charts.timeline.update();
+        }
+
+        // =============================================
+        // TAB NAVIGATION
+        // =============================================
+        function setupTabs() {
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    const tabName = tab.dataset.tab;
+                    document.getElementById('overviewSection').style.display = tabName === 'overview' ? 'block' : 'none';
+                    document.getElementById('chartsSection').style.display = tabName === 'charts' ? 'block' : 'none';
+                    document.getElementById('dataSection').style.display = tabName === 'data' ? 'block' : 'none';
+                });
+            });
+        }
+
+        // =============================================
+        // FILTER SETUP
+        // =============================================
+        function setupFilters() {
+            document.getElementById('searchInput').addEventListener('input', renderTable);
+            document.getElementById('filterDusun').addEventListener('change', renderTable);
+            document.getElementById('filterStatus').addEventListener('change', renderTable);
+            document.getElementById('filterProgram').addEventListener('change', renderTable);
+        }
+
+        // =============================================
+        // REFRESH DATA
+        // =============================================
+        async function refreshData() {
+            showToast('Memuat data terbaru...', 'success');
+            await loadData();
+            showToast('Data berhasil diperbarui!', 'success');
+        }
+
+        // =============================================
+        // EXPORT CSV
+        // =============================================
+        function exportCSV() {
+            if (dukunganData.length === 0) {
+                showToast('Tidak ada data untuk di-export', 'error');
+                return;
+            }
+
+            const headers = ['No', 'Nama', 'NIK', 'No KK', 'Dusun', 'Jumlah Anggota', 'Status', 'Program Kerja', 'Waktu Input'];
+            const rows = dukunganData.map((d, i) => [
+                i + 1,
+                d.nama,
+                d.nik,
+                d.no_kk,
+                d.nama_dusun,
+                d.jumlah_anggota || 1,
+                d.status,
+                d.program_kerja || '',
+                new Date(d.created_at).toLocaleString('id-ID')
+            ]);
+
+            const csvContent = [headers, ...rows]
+                .map(row => row.map(cell => `"${cell}"`).join(','))
+                .join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `SIDATA_Export_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+
+            showToast('Data berhasil di-export!', 'success');
+        }
+
+        // =============================================
+        // TOAST
+        // =============================================
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
